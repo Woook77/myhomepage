@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나의 업무 도구 모음</title>
+
+  <script>
+    /* ==========================================================================
+       ★ 설정값 ★ — 여기만 고치면 됩니다
+       ========================================================================== */
+
+    // 맨 아래 "만든 사람"에 표시할 이름
+    const AUTHOR_NAME = "○○○";
+
+    // 도구 목록: 새 도구를 만들면 아래 배열에 한 줄만 추가하세요.
+    //   emoji: 카드 위 큰 이모지
+    //   name : 도구 이름
+    //   desc : 한 줄 설명
+    //   url  : 열 파일 이름
+    //   ready: true = 사용 가능, false = "준비 중" 배지 표시
+    const TOOLS = [
+      { emoji: "🍱", name: "점심 메뉴 룰렛",     desc: "오늘 점심을 대신 정해 드려요",           url: "lunch.html",     ready: true  },
+      { emoji: "📄", name: "PDF 병합·분할기",    desc: "여러 PDF를 합치고 나눠요",               url: "pdf-tool.html",  ready: true  },
+      { emoji: "📊", name: "자동 데이터 분석기", desc: "파일만 넣으면 분석하고 차트를 추천해요", url: "analyzer.html",  ready: false },
+      { emoji: "⚡", name: "전력수요 대시보드",  desc: "공공데이터로 본 우리나라 전력 사용",     url: "dashboard.html", ready: false },
+    ];
+  </script>
+
+  <style>
+    /* ==========================================================================
+       기본 색상 및 공통 변수 (흰 배경 + 남색 포인트)
+       ========================================================================== */
+    :root {
+      --navy: #1f3a6d;        /* 포인트 색상 (남색) */
+      --navy-dark: #152a52;   /* 남색 진한 톤 */
+      --navy-soft: #eaf0f9;   /* 남색 연한 배경 */
+      --navy-line: #c9d6ec;   /* 남색 연한 테두리 */
+      --text: #1e293b;        /* 본문 글자 */
+      --muted: #5b6577;       /* 보조 글자 */
+      --border: #e3e8ef;      /* 기본 테두리 */
+      --soft: #f7f9fc;        /* 아주 연한 배경 */
+      --ready-bg: #fff4e0;    /* 준비 중 배지 배경 */
+      --ready-text: #9a5b00;  /* 준비 중 배지 글자 */
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      /* 외부 글꼴을 불러오지 않고, 설치된 글꼴을 순서대로 사용 */
+      font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+      background: #ffffff;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: var(--navy); color: #fff; }
+
+    .wrap {
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ==========================================================================
+       위쪽: 제목, 부제, 검색창
+       ========================================================================== */
+    .hero {
+      background: var(--navy);
+      color: #fff;
+      padding: 56px 0 72px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 제목 영역 뒤의 은은한 동그라미 장식 */
+    .hero::before, .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      pointer-events: none;
+    }
+    .hero::before { width: 320px; height: 320px; top: -140px; right: -80px; }
+    .hero::after  { width: 180px; height: 180px; bottom: -90px; left: -40px; }
+
+    .hero .wrap { position: relative; z-index: 1; }
+
+    .hero-label {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      margin-bottom: 14px;
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .hero p.sub {
+      margin-top: 8px;
+      font-size: clamp(15px, 2.4vw, 17px);
+      color: #c9d6ec;
+    }
+
+    /* 검색창: 제목 영역과 본문 사이에 걸쳐 놓임 */
+    .search-box {
+      position: relative;
+      margin-top: -28px;
+      z-index: 2;
+    }
+
+    .search-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      border: 2px solid var(--navy-line);
+      border-radius: 16px;
+      padding: 0 16px;
+      box-shadow: 0 10px 28px rgba(31, 58, 109, 0.14);
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .search-inner:focus-within {
+      border-color: var(--navy);
+      box-shadow: 0 10px 28px rgba(31, 58, 109, 0.2), 0 0 0 4px rgba(31, 58, 109, 0.12);
+    }
+
+    .search-inner svg { flex-shrink: 0; color: var(--navy); }
+
+    #searchInput {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 16px;   /* 휴대폰에서 자동 확대되지 않는 크기 */
+      color: var(--text);
+      padding: 16px 0;
+    }
+
+    #searchInput::placeholder { color: #98a2b3; }
+
+    /* 검색어 지우기 버튼 */
+    #clearSearch {
+      border: none;
+      background: var(--soft);
+      color: var(--muted);
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    #clearSearch:hover { background: var(--navy-soft); color: var(--navy); }
+
+    .key-hint {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 7px;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       가운데: 도구 카드 격자
+       ========================================================================== */
+    main { flex: 1; padding: 32px 0 48px; }
+
+    .list-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .list-head h2 { font-size: 18px; font-weight: 700; }
+    #resultCount { font-size: 14px; color: var(--muted); }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 18px;
+    }
+
+    .tool-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 22px 22px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 2px 10px rgba(31, 58, 109, 0.06);
+      /* 마우스를 올리면 살짝 떠오르는 효과 */
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 14px 30px rgba(31, 58, 109, 0.16);
+      border-color: var(--navy-line);
+    }
+
+    /* 준비 중 카드는 조금 흐리게 */
+    .tool-card.not-ready { background: var(--soft); }
+    .tool-card.not-ready .emoji { filter: grayscale(0.35); opacity: .85; }
+
+    .emoji {
+      width: 68px; height: 68px;
+      border-radius: 18px;
+      background: var(--navy-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .badge-ready {
+      position: absolute;
+      top: 18px; right: 18px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--ready-bg);
+      color: var(--ready-text);
+      border: 1px solid #f3d9a8;
+    }
+
+    .tool-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      word-break: keep-all;
+    }
+
+    .tool-card p.desc {
+      margin-top: 6px;
+      font-size: 14px;
+      color: var(--muted);
+      word-break: keep-all;
+      flex: 1;              /* 설명 길이가 달라도 버튼 위치를 맞춤 */
+    }
+
+    .btn-open {
+      margin-top: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 12px;
+      background: var(--navy);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background .15s;
+    }
+
+    .btn-open:hover { background: var(--navy-dark); }
+    .btn-open:focus-visible { outline: 3px solid var(--navy-line); outline-offset: 2px; }
+
+    /* 준비 중 도구의 버튼 (누를 수 없음) */
+    .btn-open.disabled {
+      background: #e4e8ef;
+      color: #8a94a6;
+      cursor: not-allowed;
+    }
+
+    /* 검색 결과가 없을 때 */
+    .empty {
+      text-align: center;
+      padding: 48px 16px;
+      border: 1px dashed var(--navy-line);
+      border-radius: 20px;
+      color: var(--muted);
+    }
+    .empty .big { font-size: 40px; margin-bottom: 8px; }
+    .empty strong { color: var(--text); }
+
+    /* ==========================================================================
+       맨 아래: 만든 사람
+       ========================================================================== */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 0 28px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ==========================================================================
+       휴대폰 화면: 카드를 한 줄에 하나씩
+       ========================================================================== */
+    @media (max-width: 600px) {
+      .hero { padding: 40px 0 60px; }
+      .tool-grid { grid-template-columns: 1fr; gap: 14px; }
+      .tool-card { padding: 20px 18px 18px; }
+      .key-hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 위쪽: 제목과 부제 -->
+  <header class="hero">
+    <div class="wrap">
+      <span class="hero-label">🛠️ 업무 도우미</span>
+      <h1>나의 업무 도구 모음</h1>
+      <p class="sub">바이브 코딩으로 직접 만든 업무 도우미</p>
+    </div>
+  </header>
+
+  <!-- 도구 검색창 -->
+  <div class="wrap search-box">
+    <label class="search-inner" for="searchInput">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="M20 20l-4-4"></path>
+      </svg>
+      <input type="search" id="searchInput" placeholder="도구 검색 (예: PDF, 점심)" autocomplete="off">
+      <button type="button" id="clearSearch" class="hidden" title="검색어 지우기" aria-label="검색어 지우기">&times;</button>
+      <span class="key-hint" title="키보드 / 키를 누르면 검색창으로 이동">/</span>
+    </label>
+  </div>
+
+  <!-- 가운데: 도구 카드 격자 -->
+  <main>
+    <div class="wrap">
+      <div class="list-head">
+        <h2>도구 목록</h2>
+        <span id="resultCount"></span>
+      </div>
+
+      <div id="toolGrid" class="tool-grid"></div>
+
+      <!-- 검색 결과가 없을 때 안내 -->
+      <div id="emptyState" class="empty hidden">
+        <div class="big">🔍</div>
+        <p><strong id="emptyKeyword"></strong>에 맞는 도구가 없어요.</p>
+        <p style="margin-top:4px; font-size:13px;">다른 낱말로 찾아보세요.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- 맨 아래: 만든 사람 -->
+  <footer>
+    <div class="wrap">
+      만든 사람: <span id="authorName"></span> · 2026 바이브 코딩 실습
+    </div>
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       화면 요소 참조
+       ========================================================================== */
+    const toolGrid = document.getElementById('toolGrid');
+    const searchInput = document.getElementById('searchInput');
+    const clearSearch = document.getElementById('clearSearch');
+    const resultCount = document.getElementById('resultCount');
+    const emptyState = document.getElementById('emptyState');
+    const emptyKeyword = document.getElementById('emptyKeyword');
+
+    /* ==========================================================================
+       도구 카드 하나 만들기
+       (글자는 textContent로 넣어 특수문자가 있어도 화면이 깨지지 않음)
+       ========================================================================== */
+    function createCard(tool) {
+      const card = document.createElement('article');
+      card.className = 'tool-card' + (tool.ready ? '' : ' not-ready');
+
+      // 큰 이모지
+      const emoji = document.createElement('div');
+      emoji.className = 'emoji';
+      emoji.setAttribute('aria-hidden', 'true');
+      emoji.textContent = tool.emoji;
+      card.appendChild(emoji);
+
+      // ready: false 이면 "준비 중" 배지
+      if (!tool.ready) {
+        const badge = document.createElement('span');
+        badge.className = 'badge-ready';
+        badge.textContent = '준비 중';
+        card.appendChild(badge);
+      }
+
+      // 도구 이름
+      const title = document.createElement('h3');
+      title.textContent = tool.name;
+      card.appendChild(title);
+
+      // 한 줄 설명
+      const desc = document.createElement('p');
+      desc.className = 'desc';
+      desc.textContent = tool.desc;
+      card.appendChild(desc);
+
+      // [열기] 버튼: 준비 중이면 누를 수 없는 버튼으로 표시
+      if (tool.ready) {
+        const link = document.createElement('a');
+        link.className = 'btn-open';
+        link.href = tool.url;
+        link.textContent = '열기 →';
+        link.setAttribute('aria-label', tool.name + ' 열기');
+        card.appendChild(link);
+      } else {
+        const btn = document.createElement('span');
+        btn.className = 'btn-open disabled';
+        btn.setAttribute('aria-disabled', 'true');
+        btn.textContent = '준비 중이에요';
+        card.appendChild(btn);
+      }
+
+      return card;
+    }
+
+    /* ==========================================================================
+       검색어에 맞는 도구만 골라 다시 그리기
+       ========================================================================== */
+    function render() {
+      // 띄어쓰기·대소문자 차이를 무시하고 비교
+      const normalize = (text) => String(text).toLowerCase().replace(/\s+/g, '');
+      const keyword = normalize(searchInput.value);
+
+      const matched = TOOLS.filter(tool =>
+        !keyword || normalize(tool.name + tool.desc).includes(keyword)
+      );
+
+      toolGrid.innerHTML = '';
+      matched.forEach(tool => toolGrid.appendChild(createCard(tool)));
+
+      // 개수 표시
+      const readyCount = matched.filter(t => t.ready).length;
+      resultCount.textContent = keyword
+        ? `검색 결과 ${matched.length}개`
+        : `전체 ${TOOLS.length}개 · 사용 가능 ${readyCount}개`;
+
+      // 결과가 없으면 안내 표시
+      emptyKeyword.textContent = `"${searchInput.value.trim()}"`;
+      emptyState.classList.toggle('hidden', matched.length > 0);
+      toolGrid.classList.toggle('hidden', matched.length === 0);
+
+      // 검색어가 있을 때만 지우기 버튼 표시
+      clearSearch.classList.toggle('hidden', searchInput.value === '');
+    }
+
+    /* ==========================================================================
+       이벤트 연결
+       ========================================================================== */
+    // 글자를 입력할 때마다 바로 걸러 보기
+    searchInput.addEventListener('input', render);
+
+    // 지우기 버튼
+    clearSearch.addEventListener('click', (e) => {
+      e.preventDefault();
+      searchInput.value = '';
+      render();
+      searchInput.focus();
+    });
+
+    // 키보드 단축키: "/" 검색창으로 이동, ESC 검색어 지우기
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.value = '';
+        render();
+      }
+    });
+
+    /* ==========================================================================
+       첫 화면 그리기
+       ========================================================================== */
+    document.getElementById('authorName').textContent = AUTHOR_NAME;
+    render();
+  </script>
+</body>
+</html>
